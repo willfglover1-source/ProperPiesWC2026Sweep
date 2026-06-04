@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WC 2026 • Group Stage Sweep • 9 Players</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
@@ -587,6 +588,7 @@
         }
 
         // ==================== STATE ====================
+        const _supa = supabase.createClient('https://joltkvejmscaqflfmiaq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvbHRrdmVqbXNjYXFmbGZtaWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NTM4MzIsImV4cCI6MjA5NjEyOTgzMn0.7yvun3S1k4_pdr4cJoWtN_vUu_J2pDaU-oOk7GeP-E8');
         let currentUserId = "p1";
         let predictions = {}; // { userId: { matchId: "home" | "draw" | "away" } }
         let results = {};     // { matchId: "home" | "draw" | "away" }
@@ -650,40 +652,84 @@
             }
         }
 
-        function loadState() {
+        async function loadState() {
             try {
-                const savedPredictions = safeStorage.getItem('wc2026_predictions');
-                if (savedPredictions) predictions = JSON.parse(savedPredictions);
-                
-                const savedResults = safeStorage.getItem('wc2026_results');
-                if (savedResults) results = JSON.parse(savedResults);
-                
-                const savedLocked = safeStorage.getItem('wc2026_locked_users');
-                if (savedLocked) lockedUsers = JSON.parse(savedLocked);
-                
-                const savedPasswords = safeStorage.getItem('wc2026_player_passwords');
-                if (savedPasswords) playerPasswords = JSON.parse(savedPasswords);
-                
-                // Set default current user
-                const savedUser = safeStorage.getItem('wc2026_current_user');
-                if (savedUser && PLAYERS.find(p => p.id === savedUser)) {
-                    currentUserId = savedUser;
-                }
+                const [predsRes, resultsRes, settingsRes] = await Promise.all([
+                    _supa.from('predictions').select('*'),
+                    _supa.from('results').select('*'),
+                    _supa.from('player_settings').select('*')
+                ]);
+                predictions = {};
+                (predsRes.data || []).forEach(r => {
+                    if (!predictions[r.user_id]) predictions[r.user_id] = {};
+                    predictions[r.user_id][r.match_id] = r.choice;
+                });
+                results = {};
+                (resultsRes.data || []).forEach(r => { results[r.match_id] = r.result; });
+                playerPasswords = {}; lockedUsers = {};
+                (settingsRes.data || []).forEach(r => {
+                    if (r.password) playerPasswords[r.user_id] = r.password;
+                    if (r.locked) lockedUsers[r.user_id] = true;
+                });
             } catch (e) {
-                console.warn('Could not load saved state:', e);
+                console.warn('Supabase load failed, using localStorage:', e);
+                try {
+                    const p = safeStorage.getItem('wc2026_predictions'); if (p) predictions = JSON.parse(p);
+                    const r = safeStorage.getItem('wc2026_results'); if (r) results = JSON.parse(r);
+                    const l = safeStorage.getItem('wc2026_locked_users'); if (l) lockedUsers = JSON.parse(l);
+                    const pw = safeStorage.getItem('wc2026_player_passwords'); if (pw) playerPasswords = JSON.parse(pw);
+                } catch (e2) {}
             }
+            const savedUser = safeStorage.getItem('wc2026_current_user');
+            if (savedUser && PLAYERS.find(p => p.id === savedUser)) currentUserId = savedUser;
         }
 
         function saveState() {
-            try {
-                safeStorage.setItem('wc2026_predictions', JSON.stringify(predictions));
-                safeStorage.setItem('wc2026_results', JSON.stringify(results));
-                safeStorage.setItem('wc2026_current_user', currentUserId);
-                safeStorage.setItem('wc2026_locked_users', JSON.stringify(lockedUsers));
-                safeStorage.setItem('wc2026_player_passwords', JSON.stringify(playerPasswords));
-            } catch (e) {
-                console.warn('Could not save state:', e);
-            }
+            try { safeStorage.setItem('wc2026_current_user', currentUserId); } catch(e) {}
+        }
+
+        function setupRealtime() {
+            _supa.channel('sweep-live')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'predictions' }, payload => {
+                    if (payload.eventType === 'DELETE') {
+                        const o = payload.old;
+                        if (predictions[o.user_id]) delete predictions[o.user_id][o.match_id];
+                    } else {
+                        const r = payload.new;
+                        if (!predictions[r.user_id]) predictions[r.user_id] = {};
+                        predictions[r.user_id][r.match_id] = r.choice;
+                    }
+                    const open = GROUPS.map(g => g.id).filter(id => {
+                        const el = document.getElementById('matches-' + id);
+                        return el && !el.classList.contains('hidden');
+                    });
+                    renderAllGroups();
+                    open.forEach(id => {
+                        const el = document.getElementById('matches-' + id);
+                        const ch = document.getElementById('chevron-' + id);
+                        if (el) el.classList.remove('hidden');
+                        if (ch) ch.style.transform = 'rotate(180deg)';
+                    });
+                    if (document.getElementById('section-leaderboard').classList.contains('active')) calculateAndShowLeaderboard();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'results' }, payload => {
+                    if (payload.eventType === 'DELETE') delete results[payload.old.match_id];
+                    else results[payload.new.match_id] = payload.new.result;
+                    renderAllGroups();
+                    if (document.getElementById('section-leaderboard').classList.contains('active')) calculateAndShowLeaderboard();
+                    if (document.getElementById('section-admin').classList.contains('active')) renderAdminMatches();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'player_settings' }, payload => {
+                    const row = payload.new || payload.old;
+                    if (!row) return;
+                    if (payload.eventType === 'DELETE') { delete playerPasswords[row.user_id]; delete lockedUsers[row.user_id]; }
+                    else {
+                        if (row.password) playerPasswords[row.user_id] = row.password; else delete playerPasswords[row.user_id];
+                        if (row.locked) lockedUsers[row.user_id] = true; else delete lockedUsers[row.user_id];
+                    }
+                    renderPlayerPills();
+                })
+                .subscribe();
         }
 
         // ==================== UI HELPERS ====================
@@ -705,41 +751,48 @@
             return flagMap[team] || "🏳️";
         }
 
-        function showSection(section) {
-            if (section === 'admin') {
-                const stored = safeStorage.getItem('wc2026_admin_password');
-                if (!stored) {
-                    const pw = prompt('Set an admin password:');
-                    if (!pw || !pw.trim()) return;
-                    safeStorage.setItem('wc2026_admin_password', pw.trim());
-                    alert('Admin password set. Remember it!');
-                } else {
-                    const attempt = prompt('Admin password:');
-                    if (!attempt || attempt.trim() !== stored) {
-                        alert('Incorrect password.');
-                        return;
-                    }
-                }
-            }
-            // Hide all sections
+        function _doShowSection(section) {
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-            // Deactivate all tabs
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'border-[#0A66C2]'));
-            
-            // Show target
             const target = document.getElementById(`section-${section}`);
             if (target) target.classList.add('active');
-            
-            // Activate tab
             const tab = document.getElementById(`tab-${section}`);
             if (tab) tab.classList.add('active', 'border-[#0A66C2]');
-            
-            if (section === 'leaderboard') {
-                calculateAndShowLeaderboard();
-            }
+            if (section === 'leaderboard') calculateAndShowLeaderboard();
+            if (section === 'admin') renderAdminMatches();
+        }
+
+        function showSection(section) {
             if (section === 'admin') {
-                renderAdminMatches();
+                _supa.from('app_settings').select('value').eq('key', 'admin_password').maybeSingle()
+                    .then(({ data }) => {
+                        if (!data) {
+                            const pw = prompt('Set an admin password:');
+                            if (!pw || !pw.trim()) return;
+                            _supa.from('app_settings').upsert({ key: 'admin_password', value: pw.trim() }).then(() => {});
+                            alert('Admin password set. Remember it!');
+                        } else {
+                            const attempt = prompt('Admin password:');
+                            if (!attempt || attempt.trim() !== data.value) { alert('Incorrect password.'); return; }
+                        }
+                        _doShowSection(section);
+                    })
+                    .catch(() => {
+                        const stored = safeStorage.getItem('wc2026_admin_password');
+                        if (!stored) {
+                            const pw = prompt('Set an admin password:');
+                            if (!pw || !pw.trim()) return;
+                            safeStorage.setItem('wc2026_admin_password', pw.trim());
+                            alert('Admin password set. Remember it!');
+                        } else {
+                            const attempt = prompt('Admin password:');
+                            if (!attempt || attempt.trim() !== stored) { alert('Incorrect password.'); return; }
+                        }
+                        _doShowSection(section);
+                    });
+                return;
             }
+            _doShowSection(section);
         }
 
         function switchUser(newUserId) {
@@ -881,22 +934,41 @@
 
         function setPrediction(matchId, choice, buttonElement, event) {
             if (event) event.stopImmediatePropagation();
-            
+
             if (!predictions[currentUserId]) {
                 predictions[currentUserId] = {};
             }
-            
-            // Toggle off if clicking the same
+
             if (predictions[currentUserId][matchId] === choice) {
                 delete predictions[currentUserId][matchId];
             } else {
                 predictions[currentUserId][matchId] = choice;
             }
-            
+
             saveState();
-            
-            // Refresh only this match's buttons (better UX)
+            if (predictions[currentUserId] && predictions[currentUserId][matchId]) {
+                _supa.from('predictions').upsert({ user_id: currentUserId, match_id: matchId, choice: predictions[currentUserId][matchId] }).then(() => {});
+            } else {
+                _supa.from('predictions').delete().eq('user_id', currentUserId).eq('match_id', matchId).then(() => {});
+            }
+
+            // Remember which groups are open before re-render
+            const openGroups = GROUPS
+                .map(g => g.id)
+                .filter(id => {
+                    const el = document.getElementById('matches-' + id);
+                    return el && !el.classList.contains('hidden');
+                });
+
             renderAllGroups();
+
+            // Restore open groups
+            openGroups.forEach(id => {
+                const el = document.getElementById('matches-' + id);
+                const chevron = document.getElementById('chevron-' + id);
+                if (el) el.classList.remove('hidden');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            });
         }
 
         function saveAllPredictions() {
@@ -925,6 +997,7 @@
             if (confirm(`Clear all predictions for ${PLAYERS.find(p => p.id === currentUserId).name}?`)) {
                 predictions[currentUserId] = {};
                 saveState();
+                _supa.from('predictions').delete().eq('user_id', currentUserId).then(() => {});
                 renderAllGroups();
             }
         }
@@ -1063,8 +1136,10 @@
         function updateResult(matchId, value) {
             if (value === '') {
                 delete results[matchId];
+                _supa.from('results').delete().eq('match_id', matchId).then(() => {});
             } else {
                 results[matchId] = value;
+                _supa.from('results').upsert({ match_id: matchId, result: value }).then(() => {});
             }
             saveState();
             // Refresh predictions view and leaderboard if open
@@ -1077,6 +1152,7 @@
         function clearResult(matchId) {
             delete results[matchId];
             saveState();
+            _supa.from('results').delete().eq('match_id', matchId).then(() => {});
             renderAdminMatches();
             renderAllGroups();
         }
@@ -1101,21 +1177,17 @@
 
         function resetAllData() {
             if (!confirm("This will delete ALL predictions and results. Are you sure?")) return;
-            
-            safeStorage.removeItem('wc2026_predictions');
-            safeStorage.removeItem('wc2026_results');
+            predictions = {}; results = {}; lockedUsers = {};
             safeStorage.removeItem('wc2026_current_user');
-            
-            predictions = {};
-            results = {};
-            
-            // Re-render everything
+            Promise.all([
+                _supa.from('predictions').delete().neq('match_id', ''),
+                _supa.from('results').delete().neq('match_id', ''),
+                _supa.from('player_settings').delete().neq('user_id', '')
+            ]).then(() => {});
             renderAllGroups();
-            if (document.getElementById('section-leaderboard').classList.contains('active')) {
-                calculateAndShowLeaderboard();
-            }
+            if (document.getElementById('section-leaderboard').classList.contains('active')) calculateAndShowLeaderboard();
             renderAdminMatches();
-            
+            renderPlayerPills();
             alert("All data has been reset.");
         }
 
@@ -1234,10 +1306,11 @@
                     alert("Incorrect password");
                 }
             } else {
-                // First time - set password
                 playerPasswords[playerId] = password;
                 currentUserId = playerId;
                 saveState();
+                try { safeStorage.setItem('wc2026_player_passwords', JSON.stringify(playerPasswords)); } catch(e) {}
+                _supa.from('player_settings').upsert({ user_id: playerId, password: password, locked: false }).then(() => {});
                 hidePlayerModal();
                 renderPlayerPills();
                 renderAllGroups();
@@ -1459,8 +1532,9 @@
             if (confirm("Are you sure you want to LOCK your predictions? You won't be able to change them after this.")) {
                 lockedUsers[currentUserId] = true;
                 saveState();
+                _supa.from('player_settings').upsert({ user_id: currentUserId, locked: true, password: playerPasswords[currentUserId] || null }).then(() => {});
                 updateLockUI();
-                renderAllGroups(); // Refresh to disable prediction buttons
+                renderAllGroups();
                 alert("Your predictions are now locked. Good luck!");
             }
         }
@@ -1514,36 +1588,16 @@
             updateLockUI();
         }
 
-        function initializeApp() {
+        async function initializeApp() {
             generateMatches();
-            loadState();
+            await loadState();
+            setupRealtime();
             renderPlayerPills();
             renderAllGroups();
-            
-            // Show player selection if no user or password not set
             if (!currentUserId || !playerPasswords[currentUserId]) {
-                setTimeout(() => {
-                    showPlayerSelectionModal();
-                }, 800);
+                setTimeout(() => { showPlayerSelectionModal(); }, 800);
             }
-            
-            // Show predictions by default
-            document.getElementById('section-predictions').classList.add('active');
-            
-            // Keyboard shortcut hint
-            console.log('%c[WC2026] App initialized. Use Admin tab to enter results.', 'color:#64748b');
-            
-            // Optional: Auto-open first group
-            setTimeout(() => {
-                const firstChevron = document.getElementById('chevron-A');
-                if (firstChevron) {
-                    // Uncomment if you want first group open by default
-                    // toggleGroup('A');
-                }
-            }, 800);
-
-            // Show warning if localStorage is blocked (sandboxed iframe, etc.)
-            showStorageWarning();
+            console.log('%c[WC2026] Supabase real-time sync active.', 'color:#22c55e');
         }
 
         function showShareModal() {
