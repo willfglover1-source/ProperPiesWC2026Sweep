@@ -101,6 +101,37 @@
             0% { color: #ef4444; }
             100% { color: #b91c1c; }
         }
+
+        /* Dunky Time Chaos Animations */
+        @keyframes dunky-spin-in {
+            0% { transform: scale(0.2) rotate(-720deg); opacity: 0; }
+            60% { transform: scale(1.3) rotate(120deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes dunky-text-chaos {
+            0% { transform: scale(0.8) rotate(-3deg); }
+            100% { transform: scale(1.15) rotate(3deg); }
+        }
+
+        @keyframes dunky-fly-0 {
+            0% { transform: translate(-200px, -200px) rotate(0deg); }
+            100% { transform: translate(1200px, 800px) rotate(720deg); }
+        }
+        @keyframes dunky-fly-1 {
+            0% { transform: translate(300px, -300px) rotate(0deg); }
+            100% { transform: translate(-800px, 900px) rotate(-540deg); }
+        }
+        @keyframes dunky-fly-2 {
+            0% { transform: translate(-100px, 400px) rotate(0deg); }
+            100% { transform: translate(1100px, -600px) rotate(900deg); }
+        }
+
+        @keyframes dunky-meme-fly {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-600px) scale(1.8); opacity: 0; }
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
@@ -139,6 +170,40 @@
         </div>
     </div>
 
+    <!-- PLAYER SELECTION + PASSWORD MODAL -->
+    <div id="player-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[200]">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full mx-4 p-6">
+            <div id="player-list-view">
+                <h3 class="text-2xl font-bold mb-2 text-center">Select Your Name</h3>
+                <p class="text-slate-400 text-sm text-center mb-6">Choose who you are to make predictions</p>
+                
+                <div id="player-name-list" class="grid grid-cols-1 gap-2">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div id="password-view" class="hidden">
+                <h3 class="text-xl font-bold mb-1" id="password-title"></h3>
+                <p class="text-slate-400 text-sm mb-4" id="password-subtitle"></p>
+                
+                <input type="password" id="password-input" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white mb-4 focus:outline-none focus:border-[#0A66C2]"
+                       placeholder="Enter password">
+                
+                <div class="flex gap-3">
+                    <button onclick="goBackToPlayerList()" 
+                            class="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium">
+                        Back to list
+                    </button>
+                    <button onclick="submitPassword()" 
+                            class="flex-1 px-4 py-3 bg-[#0A66C2] hover:bg-blue-700 rounded-2xl text-sm font-semibold">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="sweep-container px-4 py-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
@@ -164,6 +229,12 @@
                         class="flex items-center gap-x-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium transition-colors whitespace-nowrap">
                     <i class="fa-solid fa-share-alt mr-2"></i>
                     <span>Share</span>
+                </button>
+
+                <!-- Dunky Time Button (subtle but readable) -->
+                <button onclick="triggerDunkyTime()" id="dunky-button"
+                        class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 transition-colors">
+                    Dunky Time
                 </button>
 
                 <!-- Lock Predictions Button -->
@@ -458,6 +529,7 @@
         let predictions = {}; // { userId: { matchId: "home" | "draw" | "away" } }
         let results = {};     // { matchId: "home" | "draw" | "away" }
         let lockedUsers = {}; // { userId: true }
+        let playerPasswords = {}; // { userId: "password" }
 
         // Safe storage wrapper (handles sandboxed iframes / restricted environments)
         let storageAvailable = true;
@@ -527,6 +599,9 @@
                 const savedLocked = safeStorage.getItem('wc2026_locked_users');
                 if (savedLocked) lockedUsers = JSON.parse(savedLocked);
                 
+                const savedPasswords = safeStorage.getItem('wc2026_player_passwords');
+                if (savedPasswords) playerPasswords = JSON.parse(savedPasswords);
+                
                 // Set default current user
                 const savedUser = safeStorage.getItem('wc2026_current_user');
                 if (savedUser && PLAYERS.find(p => p.id === savedUser)) {
@@ -543,6 +618,7 @@
                 safeStorage.setItem('wc2026_results', JSON.stringify(results));
                 safeStorage.setItem('wc2026_current_user', currentUserId);
                 safeStorage.setItem('wc2026_locked_users', JSON.stringify(lockedUsers));
+                safeStorage.setItem('wc2026_player_passwords', JSON.stringify(playerPasswords));
             } catch (e) {
                 console.warn('Could not save state:', e);
             }
@@ -674,17 +750,17 @@
                                             <span>Locked</span>
                                         </div>
                                     ` : `
-                                        <button onclick="setPrediction('${match.id}', 'home', this)"
+                                        <button onclick="setPrediction('${match.id}', 'home', this, event)"
                                                 class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'home' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
                                             ${getFlagEmoji(match.home)} ${match.home.split(' ').pop()}
                                         </button>
                                         
-                                        <button onclick="setPrediction('${match.id}', 'draw', this)"
+                                        <button onclick="setPrediction('${match.id}', 'draw', this, event)"
                                                 class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'draw' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
                                             Draw
                                         </button>
                                         
-                                        <button onclick="setPrediction('${match.id}', 'away', this)"
+                                        <button onclick="setPrediction('${match.id}', 'away', this, event)"
                                                 class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'away' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
                                             ${getFlagEmoji(match.away)} ${match.away.split(' ').pop()}
                                         </button>
@@ -722,7 +798,9 @@
             }
         }
 
-        function setPrediction(matchId, choice, buttonElement) {
+        function setPrediction(matchId, choice, buttonElement, event) {
+            if (event) event.stopImmediatePropagation();
+            
             if (!predictions[currentUserId]) {
                 predictions[currentUserId] = {};
             }
@@ -737,7 +815,7 @@
             saveState();
             
             // Refresh only this match's buttons (better UX)
-            renderAllGroups(); // Simple refresh for now
+            renderAllGroups();
         }
 
         function saveAllPredictions() {
@@ -971,6 +1049,243 @@
             }
         }
 
+        // ==================== PLAYER + PASSWORD SYSTEM ====================
+        function showPlayerSelectionModal() {
+            const modal = document.getElementById('player-modal');
+            const listView = document.getElementById('player-list-view');
+            const passwordView = document.getElementById('password-view');
+            
+            listView.classList.remove('hidden');
+            passwordView.classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            renderPlayerNameList();
+        }
+
+        function renderPlayerNameList() {
+            const container = document.getElementById('player-name-list');
+            container.innerHTML = '';
+
+            PLAYERS.forEach(player => {
+                const hasPassword = playerPasswords[player.id];
+                const isLocked = lockedUsers[player.id];
+
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-5 py-4 rounded-2xl border transition-all flex items-center justify-between ${
+                    hasPassword 
+                        ? 'bg-slate-800 border-slate-700 hover:border-slate-600' 
+                        : 'bg-slate-900 border-slate-700 hover:border-[#0A66C2]'
+                }`;
+
+                btn.innerHTML = `
+                    <div class="font-semibold">${player.name}</div>
+                    <div class="text-xs ${hasPassword ? 'text-emerald-400' : 'text-slate-500'}">
+                        ${hasPassword ? 'Password set' : 'New player'}
+                    </div>
+                `;
+
+                btn.onclick = () => selectPlayer(player.id);
+                container.appendChild(btn);
+            });
+        }
+
+        let pendingPlayerId = null;
+
+        function selectPlayer(playerId) {
+            pendingPlayerId = playerId;
+            const hasPassword = playerPasswords[playerId];
+
+            const listView = document.getElementById('player-list-view');
+            const passwordView = document.getElementById('password-view');
+            const title = document.getElementById('password-title');
+            const subtitle = document.getElementById('password-subtitle');
+            const input = document.getElementById('password-input');
+
+            listView.classList.add('hidden');
+            passwordView.classList.remove('hidden');
+
+            if (hasPassword) {
+                title.textContent = `Enter password for ${PLAYERS.find(p => p.id === playerId).name}`;
+                subtitle.textContent = "Enter your password to access your predictions";
+                input.placeholder = "Enter your password";
+            } else {
+                title.textContent = `Create password for ${PLAYERS.find(p => p.id === playerId).name}`;
+                subtitle.textContent = "Set a password so others can't access your account";
+                input.placeholder = "Create a password";
+            }
+
+            input.value = '';
+            input.focus();
+        }
+
+        function goBackToPlayerList() {
+            const listView = document.getElementById('player-list-view');
+            const passwordView = document.getElementById('password-view');
+            
+            listView.classList.remove('hidden');
+            passwordView.classList.add('hidden');
+            pendingPlayerId = null;
+        }
+
+        function submitPassword() {
+            const input = document.getElementById('password-input');
+            const password = input.value.trim();
+
+            if (!password) {
+                alert("Please enter a password");
+                return;
+            }
+
+            const playerId = pendingPlayerId;
+            const hasPassword = playerPasswords[playerId];
+
+            if (hasPassword) {
+                // Verify existing password
+                if (playerPasswords[playerId] === password) {
+                    // Password correct - login
+                    currentUserId = playerId;
+                    saveState();
+                    hidePlayerModal();
+                    renderPlayerPills();
+                    renderAllGroups();
+                } else {
+                    alert("Incorrect password");
+                }
+            } else {
+                // First time - set password
+                playerPasswords[playerId] = password;
+                currentUserId = playerId;
+                saveState();
+                hidePlayerModal();
+                renderPlayerPills();
+                renderAllGroups();
+                alert(`Password set for ${PLAYERS.find(p => p.id === playerId).name}. Don't forget it!`);
+            }
+        }
+
+        function hidePlayerModal() {
+            const modal = document.getElementById('player-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // ==================== DUNKY TIME (MAXIMUM CHAOS) ====================
+        let dunkyUsed = false;
+
+        function triggerDunkyTime() {
+            if (dunkyUsed) return;
+            dunkyUsed = true;
+
+            const button = document.getElementById('dunky-button');
+            if (button) button.style.opacity = '0.3';
+
+            // Create full-screen chaos overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: #000; z-index: 9999; overflow: hidden;
+                display: flex; align-items: center; justify-content: center;
+            `;
+
+            // Add the main image (spinning in)
+            const mainImg = document.createElement('img');
+            mainImg.src = 'https://picsum.photos/id/1005/400/400'; // ← REPLACE WITH ACTUAL IMAGE URL
+            mainImg.style.cssText = `
+                position: absolute; width: 280px; height: 280px; object-fit: cover;
+                border-radius: 9999px; border: 8px solid #fff;
+                animation: dunky-spin-in 1.2s cubic-bezier(0.23, 1.0, 0.32, 1) forwards;
+                box-shadow: 0 0 80px rgba(255,255,255,0.6);
+            `;
+            overlay.appendChild(mainImg);
+
+            // Add flying duplicate images (chaos)
+            for (let i = 0; i < 6; i++) {
+                const flyImg = document.createElement('img');
+                flyImg.src = mainImg.src;
+                flyImg.style.cssText = `
+                    position: absolute; width: 120px; height: 120px; object-fit: cover;
+                    border-radius: 9999px; opacity: 0.7;
+                    animation: dunky-fly-${i % 3} ${1.5 + Math.random() * 2}s linear infinite;
+                `;
+                overlay.appendChild(flyImg);
+            }
+
+            // Main text
+            const mainText = document.createElement('div');
+            mainText.textContent = 'DUNCAN SUTHERLAND HAS ARRIVED!!!';
+            mainText.style.cssText = `
+                position: absolute; color: #fff; font-size: 72px; font-weight: 900;
+                text-align: center; text-transform: uppercase; letter-spacing: -4px;
+                text-shadow: 0 0 20px #fff, 4px 4px 0 #000;
+                animation: dunky-text-chaos 800ms infinite alternate;
+                z-index: 10;
+            `;
+            overlay.appendChild(mainText);
+
+            // Flying meme texts
+            const memeTexts = ['WOOW', 'ILLUMINATI', '10', 'BRRR', 'GOAT', 'SUTHERLAND'];
+            memeTexts.forEach((txt, i) => {
+                const el = document.createElement('div');
+                el.textContent = txt;
+                el.style.cssText = `
+                    position: absolute; color: #ff0; font-size: ${28 + Math.random() * 20}px;
+                    font-weight: 900; text-shadow: 2px 2px 0 #000;
+                    animation: dunky-meme-fly ${1.2 + Math.random()}s linear forwards;
+                    left: ${Math.random() * 100}%; top: ${Math.random() * 100}%;
+                    z-index: 5;
+                `;
+                overlay.appendChild(el);
+            });
+
+            // Close button (X)
+            const closeBtn = document.createElement('div');
+            closeBtn.innerHTML = '✕';
+            closeBtn.style.cssText = `
+                position: absolute; top: 30px; right: 40px; color: #fff;
+                font-size: 42px; font-weight: bold; cursor: pointer; z-index: 20;
+                text-shadow: 0 0 10px #000;
+            `;
+            closeBtn.onclick = () => {
+                overlay.style.transition = 'opacity 0.3s ease';
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 300);
+            };
+            overlay.appendChild(closeBtn);
+
+            document.body.appendChild(overlay);
+
+            // Screen shake
+            let shake = 0;
+            const shakeInterval = setInterval(() => {
+                if (!overlay.parentNode) {
+                    clearInterval(shakeInterval);
+                    return;
+                }
+                shake = (shake + 1) % 4;
+                overlay.style.transform = `translate(${shake % 2 === 0 ? '4px' : '-4px'}, ${shake > 1 ? '3px' : '-3px'})`;
+            }, 60);
+
+            // Color flash
+            let flash = 0;
+            const flashInterval = setInterval(() => {
+                if (!overlay.parentNode) {
+                    clearInterval(flashInterval);
+                    return;
+                }
+                flash = (flash + 1) % 5;
+                const colors = ['#000', '#ff0000', '#00ff00', '#0000ff', '#ffff00'];
+                overlay.style.background = colors[flash];
+            }, 120);
+
+            // Play loud sound (replace URL with actual loud meme sound if needed)
+            try {
+                const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); // ← Replace with loud meme sound
+                audio.volume = 1.0;
+                audio.play().catch(() => {});
+            } catch (e) {}
+        }
+
         function lockMyPredictions() {
             if (confirm("Are you sure you want to LOCK your predictions? You won't be able to change them after this.")) {
                 lockedUsers[currentUserId] = true;
@@ -1035,6 +1350,13 @@
             loadState();
             renderPlayerPills();
             renderAllGroups();
+            
+            // Show player selection if no user or password not set
+            if (!currentUserId || !playerPasswords[currentUserId]) {
+                setTimeout(() => {
+                    showPlayerSelectionModal();
+                }, 800);
+            }
             
             // Show predictions by default
             document.getElementById('section-predictions').classList.add('active');
