@@ -49,10 +49,13 @@
         .leaderboard-row {
             transition: background-color 0.2s ease;
         }
-        
-        .leaderboard-row:hover {
-            background-color: #f8fafc;
-        }
+        .leaderboard-row:hover { background-color: rgba(148,163,184,0.05); }
+        .leaderboard-row-gold { background: linear-gradient(90deg, rgba(234,179,8,0.14) 0%, rgba(234,179,8,0.04) 100%); }
+        .leaderboard-row-silver { background: linear-gradient(90deg, rgba(148,163,184,0.14) 0%, rgba(148,163,184,0.04) 100%); }
+        .leaderboard-row-bronze { background: linear-gradient(90deg, rgba(180,83,9,0.18) 0%, rgba(180,83,9,0.06) 100%); }
+        .leaderboard-row-forfeit { background: linear-gradient(90deg, rgba(220,38,38,0.18) 0%, rgba(220,38,38,0.06) 100%); }
+        @keyframes forfeit-pulse { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
+        .forfeit-badge { animation: forfeit-pulse 1.4s ease-in-out infinite; }
 
         .nav-tab {
             position: relative;
@@ -368,27 +371,60 @@
 
         <!-- LEADERBOARD SECTION -->
         <div id="section-leaderboard" class="section">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-2xl font-semibold">Live Leaderboard</h2>
                     <p class="text-slate-400">Updated automatically when results are entered</p>
                 </div>
-                <button onclick="calculateAndShowLeaderboard()" 
+                <button onclick="calculateAndShowLeaderboard()"
                         class="px-5 py-2.5 bg-[#0A66C2] hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2">
                     <i class="fa-solid fa-sync-alt"></i>
                     <span>Refresh Scores</span>
                 </button>
             </div>
-            
+
+            <!-- Prize pot banner -->
+            <div class="flex items-center gap-x-1 mb-5 p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 pr-4">
+                    <span class="text-2xl">🥇</span>
+                    <div>
+                        <div class="text-yellow-400 font-bold text-lg leading-none">$60</div>
+                        <div class="text-slate-500 text-xs">1st place</div>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 px-4">
+                    <span class="text-2xl">🥈</span>
+                    <div>
+                        <div class="text-slate-300 font-bold text-lg leading-none">$20</div>
+                        <div class="text-slate-500 text-xs">2nd place</div>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 px-4">
+                    <span class="text-2xl">🥉</span>
+                    <div>
+                        <div class="text-amber-500 font-bold text-lg leading-none">$10</div>
+                        <div class="text-slate-500 text-xs">3rd place</div>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 pl-4">
+                    <span class="text-2xl">💀</span>
+                    <div>
+                        <div class="text-red-500 font-bold text-sm leading-none forfeit-badge">FORFEIT</div>
+                        <div class="text-slate-500 text-xs">Last place</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
                 <table class="w-full">
                     <thead>
                         <tr class="bg-slate-950 border-b border-slate-800">
-                            <th class="text-left px-6 py-4 text-xs font-semibold text-slate-400 w-12">#</th>
+                            <th class="text-left px-6 py-4 text-xs font-semibold text-slate-400 w-16">#</th>
                             <th class="text-left px-6 py-4 text-xs font-semibold text-slate-400">Player</th>
                             <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Points</th>
                             <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Correct</th>
                             <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Accuracy</th>
+                            <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Prize</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body" class="divide-y divide-slate-800">
@@ -396,10 +432,10 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <div class="mt-4 text-xs text-slate-500 flex items-center gap-x-2">
                 <i class="fa-solid fa-info-circle"></i>
-                <span>Scoring: 3 points for correct winner or draw. Results updated by admin.</span>
+                <span>Scoring: 3 points for correct winner or draw. Prize pot: $90 total — $60 / $20 / $10. Last place gets a forfeit.</span>
             </div>
         </div>
 
@@ -1143,21 +1179,51 @@
                 return b.accuracy - a.accuracy;
             });
             
+            const lastIndex = scores.length - 1;
+
+            const RANK = [
+                { rowCls: 'leaderboard-row-gold',   medal: '🥇', numCls: 'text-yellow-400 font-bold', prize: '<span class="text-yellow-400 font-bold">$60</span>' },
+                { rowCls: 'leaderboard-row-silver',  medal: '🥈', numCls: 'text-slate-300 font-bold',  prize: '<span class="text-slate-300 font-bold">$20</span>' },
+                { rowCls: 'leaderboard-row-bronze',  medal: '🥉', numCls: 'text-amber-500 font-bold',  prize: '<span class="text-amber-500 font-bold">$10</span>' },
+            ];
+
             scores.forEach((player, index) => {
+                const isLast = index === lastIndex && scores.length > 1;
+                const rank = !isLast && index < 3 ? RANK[index] : null;
+                const rowExtra = isLast ? 'leaderboard-row-forfeit' : (rank ? rank.rowCls : '');
+                const youHighlight = player.id === currentUserId ? 'ring-1 ring-inset ring-[#0A66C2]/30' : '';
+
                 const row = document.createElement('tr');
-                row.className = `leaderboard-row ${player.id === currentUserId ? 'bg-slate-800/50' : ''}`;
-                
+                row.className = `leaderboard-row ${rowExtra} ${youHighlight}`;
+
+                const rankCell = isLast
+                    ? `<div class="text-red-500 font-bold text-sm leading-none">💀</div><div class="text-red-600 text-[10px] font-mono">LAST</div>`
+                    : rank
+                        ? `<div class="${rank.numCls} text-lg leading-none">${rank.medal}</div><div class="${rank.numCls} text-xs">${index + 1}</div>`
+                        : `<div class="font-mono text-sm text-slate-500">${index + 1}</div>`;
+
+                const avatarBg = isLast ? 'bg-red-900/40 text-red-400' : rank ? ['bg-yellow-900/40 text-yellow-400','bg-slate-600/60 text-slate-200','bg-amber-900/40 text-amber-500'][index] : 'bg-slate-700 text-slate-400';
+
+                const forfeitBadge = isLast
+                    ? `<span class="forfeit-badge text-[10px] px-1.5 py-px bg-red-900/40 text-red-400 rounded font-bold tracking-wide">⚠ FORFEIT INCOMING</span>`
+                    : '';
+
+                const prizeCell = isLast
+                    ? `<span class="forfeit-badge text-red-500 font-bold text-sm">💀</span>`
+                    : rank ? rank.prize : '<span class="text-slate-700">—</span>';
+
                 row.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-sm text-slate-500">${index + 1}</td>
+                    <td class="px-6 py-4 text-center">${rankCell}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-x-3">
-                            <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-xs">
+                            <div class="w-8 h-8 ${avatarBg} rounded-xl flex items-center justify-center text-xs">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                             <div>
-                                <div class="font-semibold flex items-center gap-x-2">
+                                <div class="font-semibold flex items-center gap-x-2 flex-wrap gap-y-1">
                                     ${player.name}
                                     ${lockedUsers[player.id] ? '<i class="fa-solid fa-lock text-emerald-400 text-xs" title="Predictions locked"></i>' : ''}
+                                    ${forfeitBadge}
                                 </div>
                                 ${player.id === currentUserId ? '<span class="text-[10px] px-1.5 py-px bg-[#0A66C2]/20 text-[#0A66C2] rounded">YOU</span>' : ''}
                             </div>
@@ -1174,6 +1240,7 @@
                             ${player.accuracy}%
                         </div>
                     </td>
+                    <td class="px-6 py-4 text-center">${prizeCell}</td>
                 `;
                 tbody.appendChild(row);
             });
