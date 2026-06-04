@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WC 2026 • Group Stage Sweep • 9 Players</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --primary: #0A66C2;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .match-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .match-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .prediction-btn {
+            transition: all 0.1s ease;
+        }
+        
+        .prediction-btn.active {
+            background-color: #0A66C2;
+            color: white;
+            border-color: #0A66C2;
+        }
+
+        .group-header {
+            background: linear-gradient(90deg, #0A66C2, #1e40af);
+        }
+
+        .leaderboard-row {
+            transition: background-color 0.2s ease;
+        }
+        
+        .leaderboard-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .nav-tab {
+            position: relative;
+        }
+        
+        .nav-tab.active:after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #0A66C2;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .sweep-container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .flag {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+
+        .match-result {
+            font-size: 0.75rem;
+            padding: 1px 8px;
+            border-radius: 9999px;
+        }
+
+        .flashing-text {
+            animation: flash-red 1.1s infinite alternate ease-in-out;
+            text-shadow: 0 0 20px rgb(239 68 68 / 0.6);
+        }
+
+        @keyframes flash-red {
+            0% { color: #ef4444; }
+            100% { color: #b91c1c; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <!-- OUTRAGEOUS BUY-IN POPUP -->
+    <div id="buyin-modal" onclick="if (event.target.id === 'buyin-modal') hideBuyinModal()" 
+         class="fixed inset-0 bg-black/95 flex items-center justify-center z-[999]">
+        <div class="max-w-3xl mx-4 text-center px-4">
+            <div class="mb-4">
+                <div class="inline-block px-6 py-1.5 bg-red-600 text-white text-xs font-black tracking-[3px] rounded-full">
+                    BUY-IN REQUIRED • $20 TOTAL
+                </div>
+            </div>
+            
+            <div onclick="event.stopImmediatePropagation(); hideBuyinModal()" class="cursor-pointer">
+                <div class="text-[64px] md:text-[82px] leading-[0.9] font-black text-red-500 tracking-[-5px] flashing-text select-none">
+                    TRANSFER PLOV<br>
+                    $20 BUY-IN<br>
+                    FOR BOTH SWEEPS
+                </div>
+            </div>
+            
+            <div class="mt-6 text-red-400 text-2xl font-extrabold tracking-widest">
+                $10 GROUP STAGE + $10 ROUND OF 32
+            </div>
+            
+            <div class="mt-8">
+                <button onclick="hideBuyinModal()" 
+                        class="px-12 py-5 bg-white hover:bg-red-100 active:bg-red-200 text-black font-black text-2xl rounded-3xl transition-all shadow-2xl">
+                    I HAVE SENT $20 TO PLOV
+                </button>
+            </div>
+            
+            <div class="mt-5 text-red-400/60 text-sm font-medium tracking-wider">
+                TAP ANYWHERE TO CONTINUE TO THE SWEEPS
+            </div>
+        </div>
+    </div>
+
+    <div class="sweep-container px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-x-4">
+                <div class="w-12 h-12 bg-[#0A66C2] rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-trophy text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-4xl font-semibold tracking-tighter">WC 2026</h1>
+                    <p class="text-slate-400 text-sm -mt-1">Group Stage Sweep • 9 Players</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-3">
+                <!-- Player Selector -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-1.5 flex items-center gap-x-1 overflow-x-auto max-w-[420px]">
+                    <div id="player-pills" class="flex items-center gap-x-1">
+                        <!-- Populated dynamically by JS with clickable pills -->
+                    </div>
+                </div>
+                
+                <button onclick="showShareModal()" 
+                        class="flex items-center gap-x-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-share-alt mr-2"></i>
+                    <span>Share</span>
+                </button>
+
+                <!-- Lock Predictions Button -->
+                <button onclick="lockMyPredictions()" id="lock-button"
+                        class="flex items-center gap-x-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-2xl text-sm transition-colors whitespace-nowrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <span id="lock-button-text">Lock Predictions</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-slate-800 mb-6">
+            <button onclick="showSection('group-stage')" id="tab-group-stage"
+                    class="nav-tab active px-6 py-3 font-medium flex items-center gap-x-2 text-base border-b-2 border-[#0A66C2]">
+                <i class="fa-solid fa-users"></i>
+                <span>Group Stage</span>
+            </button>
+            <button onclick="showSection('leaderboard')" id="tab-leaderboard"
+                    class="nav-tab px-6 py-3 font-medium flex items-center gap-x-2 text-base text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Leaderboard</span>
+            </button>
+            <button onclick="showSection('admin')" id="tab-admin"
+                    class="nav-tab px-6 py-3 font-medium flex items-center gap-x-2 text-base text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-cog"></i>
+                <span>Admin</span>
+            </button>
+        </div>
+
+        <!-- GROUP STAGE SECTION -->
+        <div id="section-group-stage" class="section active">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-2xl font-semibold">Group Stage Predictions</h2>
+                    <p class="text-slate-400 text-sm">Predict the winner or draw for every group stage match.</p>
+                    <p class="text-slate-400 text-sm">Predict the winner or draw for every group stage match. Points: 3 for correct result.</p>
+                </div>
+                <div class="flex items-center gap-x-2">
+                    <button onclick="saveAllPredictions()" 
+                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2 transition-colors">
+                        <i class="fa-solid fa-save"></i>
+                        <span>Save All Predictions</span>
+                    </button>
+                    <button onclick="clearMyPredictions()" 
+                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-2xl flex items-center gap-x-2 transition-colors">
+                        <i class="fa-solid fa-undo"></i>
+                        <span>Clear Mine</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mb-6">
+                <div class="relative max-w-md">
+                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500"></i>
+                    <input type="text" id="search-input" placeholder="Search teams or groups..." 
+                           onkeyup="filterGroups()"
+                           class="w-full bg-slate-900 border border-slate-700 focus:border-[#0A66C2] rounded-2xl pl-11 py-3 text-sm placeholder:text-slate-500">
+                </div>
+            </div>
+
+            <!-- Groups Container -->
+            <div id="groups-container" class="space-y-4">
+                <!-- Populated dynamically by JavaScript -->
+            </div>
+        </div>
+
+        <!-- LEADERBOARD SECTION -->
+        <div id="section-leaderboard" class="section">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold">Live Leaderboard</h2>
+                    <p class="text-slate-400">Updated automatically when results are entered</p>
+                </div>
+                <button onclick="calculateAndShowLeaderboard()" 
+                        class="px-5 py-2.5 bg-[#0A66C2] hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2">
+                    <i class="fa-solid fa-sync-alt"></i>
+                    <span>Refresh Scores</span>
+                </button>
+            </div>
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-slate-950 border-b border-slate-800">
+                            <th class="text-left px-6 py-4 text-xs font-semibold text-slate-400 w-12">#</th>
+                            <th class="text-left px-6 py-4 text-xs font-semibold text-slate-400">Player</th>
+                            <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Points</th>
+                            <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Correct</th>
+                            <th class="text-center px-6 py-4 text-xs font-semibold text-slate-400">Accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body" class="divide-y divide-slate-800">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 text-xs text-slate-500 flex items-center gap-x-2">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>Scoring: 3 points for correct winner or draw. Results updated by admin.</span>
+            </div>
+        </div>
+
+        <!-- ADMIN SECTION -->
+        <div id="section-admin" class="section">
+            <div class="max-w-4xl">
+                <div class="flex items-center gap-x-3 mb-6">
+                    <div class="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-semibold">Admin Panel</h2>
+                        <p class="text-slate-400 text-sm">Enter match results to update the leaderboard for everyone</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="font-medium">Quick Actions</div>
+                        <button onclick="resetAllData()" 
+                                class="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-xl flex items-center gap-x-1.5 text-xs font-medium">
+                            <i class="fa-solid fa-trash"></i>
+                            <span>Reset Everything (Danger)</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="markAllMatchesAsPlayed()" 
+                                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-2xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Mark all matches played (demo)</span>
+                        </button>
+                        <button onclick="calculateAndShowLeaderboard()" 
+                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-2xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-calculator"></i>
+                            <span>Recalculate all scores</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Entry -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-x-2">
+                        <span>Enter / Update Match Results</span>
+                    </h3>
+                    
+                    <div id="admin-matches-container" class="space-y-3 max-h-[520px] overflow-auto pr-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" onclick="if (event.target.id === 'share-modal') hideShareModal()" 
+         class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full mx-4 p-6">
+            <h3 class="font-semibold text-xl mb-2">Share this pool with your 9 friends</h3>
+            <p class="text-slate-400 text-sm mb-4">This is a self-contained file. Best ways to share:</p>
+            
+            <div class="space-y-3">
+                <div class="flex items-start gap-x-3 p-3 bg-slate-950 rounded-2xl">
+                    <i class="fa-solid fa-globe text-emerald-400 mt-1"></i>
+                    <div class="text-sm">
+                        <div class="font-medium">Host it for free (recommended)</div>
+                        <div class="text-slate-400">Upload this HTML file to <a href="https://app.netlify.com/drop" target="_blank" class="text-[#0A66C2]">Netlify Drop</a> or Vercel. Get a real link instantly.</div>
+                    </div>
+                </div>
+                <div class="flex items-start gap-x-3 p-3 bg-slate-950 rounded-2xl">
+                    <i class="fa-solid fa-users text-blue-400 mt-1"></i>
+                    <div class="text-sm">
+                        <div class="font-medium">Share the file directly</div>
+                        <div class="text-slate-400">Send the .html file via WhatsApp, email, or Discord. Everyone opens it in their browser.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end">
+                <button onclick="hideShareModal()" class="px-5 py-2 text-sm font-medium">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DATA ====================
+        const PLAYERS = [
+            { id: "p1", name: "Mik" },
+            { id: "p2", name: "Pickle" },
+            { id: "p3", name: "Buchy" },
+            { id: "p4", name: "Theile" },
+            { id: "p5", name: "Curran" },
+            { id: "p6", name: "Glover" },
+            { id: "p7", name: "Jordy" },
+            { id: "p8", name: "Dunc" },
+            { id: "p9", name: "Wylie" }
+        ];
+
+        // 12 Groups for 2026 World Cup (based on official draw data)
+        const GROUPS = [
+            {
+                id: "A",
+                name: "Group A",
+                teams: ["Mexico", "South Africa", "Korea Republic", "Czechia"]
+            },
+            {
+                id: "B",
+                name: "Group B",
+                teams: ["Canada", "Bosnia and Herzegovina", "Qatar", "Switzerland"]
+            },
+            {
+                id: "C",
+                name: "Group C",
+                teams: ["Brazil", "Morocco", "Haiti", "Scotland"]
+            },
+            {
+                id: "D",
+                name: "Group D",
+                teams: ["United States", "Paraguay", "Australia", "Türkiye"]
+            },
+            {
+                id: "E",
+                name: "Group E",
+                teams: ["Germany", "Curaçao", "Côte d’Ivoire", "Ecuador"]
+            },
+            {
+                id: "F",
+                name: "Group F",
+                teams: ["Netherlands", "Japan", "Tunisia", "Sweden"]
+            },
+            {
+                id: "G",
+                name: "Group G",
+                teams: ["Belgium", "Egypt", "Iran", "New Zealand"]
+            },
+            {
+                id: "H",
+                name: "Group H",
+                teams: ["Spain", "Cabo Verde", "Saudi Arabia", "Uruguay"]
+            },
+            {
+                id: "I",
+                name: "Group I",
+                teams: ["Argentina", "Colombia", "Peru", "Jordan"]
+            },
+            {
+                id: "J",
+                name: "Group J",
+                teams: ["France", "Senegal", "Norway", "Iraq"]
+            },
+            {
+                id: "K",
+                name: "Group K",
+                teams: ["Portugal", "Austria", "Uzbekistan", "Algeria"]
+            },
+            {
+                id: "L",
+                name: "Group L",
+                teams: ["England", "Croatia", "Ghana", "Panama"]
+            }
+        ];
+
+        // Generate all matches dynamically
+        let ALL_MATCHES = [];
+        
+        function generateMatches() {
+            ALL_MATCHES = [];
+            let matchCounter = 0;
+            
+            GROUPS.forEach(group => {
+                const teams = group.teams;
+                // All combinations of 2 teams
+                for (let i = 0; i < teams.length; i++) {
+                    for (let j = i + 1; j < teams.length; j++) {
+                        matchCounter++;
+                        ALL_MATCHES.push({
+                            id: `${group.id}-${matchCounter}`,
+                            groupId: group.id,
+                            home: teams[i],
+                            away: teams[j],
+                            date: "TBD" // Can be updated later with real schedule
+                        });
+                    }
+                }
+            });
+        }
+
+        // ==================== STATE ====================
+        let currentUserId = "p1";
+        let predictions = {}; // { userId: { matchId: "home" | "draw" | "away" } }
+        let results = {};     // { matchId: "home" | "draw" | "away" }
+        let lockedUsers = {}; // { userId: true }
+
+        // Safe storage wrapper (handles sandboxed iframes / restricted environments)
+        let storageAvailable = true;
+        let memoryStorage = {};
+
+        const safeStorage = {
+            getItem: (key) => {
+                if (storageAvailable) {
+                    try {
+                        return localStorage.getItem(key);
+                    } catch (e) {
+                        storageAvailable = false;
+                    }
+                }
+                return memoryStorage[key] || null;
+            },
+            setItem: (key, value) => {
+                if (storageAvailable) {
+                    try {
+                        localStorage.setItem(key, value);
+                        return;
+                    } catch (e) {
+                        storageAvailable = false;
+                    }
+                }
+                memoryStorage[key] = value;
+            },
+            removeItem: (key) => {
+                if (storageAvailable) {
+                    try {
+                        localStorage.removeItem(key);
+                        return;
+                    } catch (e) {
+                        storageAvailable = false;
+                    }
+                }
+                delete memoryStorage[key];
+            }
+        };
+
+        function showStorageWarning() {
+            if (!storageAvailable) {
+                const warning = document.createElement('div');
+                warning.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-black text-sm font-medium px-6 py-2 rounded-2xl shadow-xl flex items-center gap-x-2';
+                warning.innerHTML = `
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    <span>Storage is restricted in this environment. Predictions will reset when you refresh the page.</span>
+                `;
+                document.body.appendChild(warning);
+                
+                setTimeout(() => {
+                    warning.style.transition = 'opacity 0.4s ease';
+                    warning.style.opacity = '0';
+                    setTimeout(() => warning.remove(), 400);
+                }, 6500);
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedPredictions = safeStorage.getItem('wc2026_predictions');
+                if (savedPredictions) predictions = JSON.parse(savedPredictions);
+                
+                const savedResults = safeStorage.getItem('wc2026_results');
+                if (savedResults) results = JSON.parse(savedResults);
+                
+                const savedLocked = safeStorage.getItem('wc2026_locked_users');
+                if (savedLocked) lockedUsers = JSON.parse(savedLocked);
+                
+                // Set default current user
+                const savedUser = safeStorage.getItem('wc2026_current_user');
+                if (savedUser && PLAYERS.find(p => p.id === savedUser)) {
+                    currentUserId = savedUser;
+                }
+            } catch (e) {
+                console.warn('Could not load saved state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                safeStorage.setItem('wc2026_predictions', JSON.stringify(predictions));
+                safeStorage.setItem('wc2026_results', JSON.stringify(results));
+                safeStorage.setItem('wc2026_current_user', currentUserId);
+                safeStorage.setItem('wc2026_locked_users', JSON.stringify(lockedUsers));
+            } catch (e) {
+                console.warn('Could not save state:', e);
+            }
+        }
+
+        // ==================== UI HELPERS ====================
+        function getFlagEmoji(team) {
+            const flagMap = {
+                "Mexico": "🇲🇽", "South Africa": "🇿🇦", "Korea Republic": "🇰🇷", "Czechia": "🇨🇿",
+                "Canada": "🇨🇦", "Bosnia and Herzegovina": "🇧🇦", "Qatar": "🇶🇦", "Switzerland": "🇨🇭",
+                "Brazil": "🇧🇷", "Morocco": "🇲🇦", "Haiti": "🇭🇹", "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+                "United States": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Türkiye": "🇹🇷",
+                "Germany": "🇩🇪", "Curaçao": "🇨🇼", "Côte d’Ivoire": "🇨🇮", "Ecuador": "🇪🇨",
+                "Netherlands": "🇳🇱", "Japan": "🇯🇵", "Tunisia": "🇹🇳", "Sweden": "🇸🇪",
+                "Belgium": "🇧🇪", "Egypt": "🇪🇬", "Iran": "🇮🇷", "New Zealand": "🇳🇿",
+                "Spain": "🇪🇸", "Cabo Verde": "🇨🇻", "Saudi Arabia": "🇸🇦", "Uruguay": "🇺🇾",
+                "Argentina": "🇦🇷", "Colombia": "🇨🇴", "Peru": "🇵🇪", "Jordan": "🇯🇴",
+                "France": "🇫🇷", "Senegal": "🇸🇳", "Norway": "🇳🇴", "Iraq": "🇮🇶",
+                "Portugal": "🇵🇹", "Austria": "🇦🇹", "Uzbekistan": "🇺🇿", "Algeria": "🇩🇿",
+                "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croatia": "🇭🇷", "Ghana": "🇬🇭", "Panama": "🇵🇦"
+            };
+            return flagMap[team] || "🏳️";
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            // Deactivate all tabs
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'border-[#0A66C2]'));
+            
+            // Show target
+            const target = document.getElementById(`section-${section}`);
+            if (target) target.classList.add('active');
+            
+            // Activate tab
+            const tab = document.getElementById(`tab-${section}`);
+            if (tab) tab.classList.add('active', 'border-[#0A66C2]');
+            
+            if (section === 'leaderboard') {
+                calculateAndShowLeaderboard();
+            }
+            if (section === 'admin') {
+                renderAdminMatches();
+            }
+        }
+
+        function switchUser(newUserId) {
+            currentUserId = newUserId;
+            saveState();
+            renderPlayerPills();           // Refresh the pills + lock button
+            renderAllGroups();             // Refresh predictions view for the new user
+        }
+
+        function filterGroups() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const groupCards = document.querySelectorAll('.group-card');
+            
+            groupCards.forEach(card => {
+                const groupName = card.dataset.group.toLowerCase();
+                const teamsText = card.textContent.toLowerCase();
+                
+                if (groupName.includes(searchTerm) || teamsText.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // ==================== RENDER GROUPS & MATCHES ====================
+        function renderAllGroups() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            
+            const userPreds = predictions[currentUserId] || {};
+            
+            GROUPS.forEach(group => {
+                const groupMatches = ALL_MATCHES.filter(m => m.groupId === group.id);
+                
+                const card = document.createElement('div');
+                card.className = `group-card bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden`;
+                card.dataset.group = group.id;
+                
+                let html = `
+                    <div class="group-header px-6 py-4 flex items-center justify-between cursor-pointer" onclick="toggleGroup('${group.id}')">
+                        <div class="flex items-center gap-x-3">
+                            <div class="font-display text-xl font-semibold">${group.name}</div>
+                            <div class="flex -space-x-1">
+                                ${group.teams.map(team => `
+                                    <div class="w-7 h-7 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-xs ring-1 ring-slate-900" title="${team}">
+                                        ${getFlagEmoji(team)}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-x-2 text-sm">
+                            <span class="text-slate-400">${groupMatches.length} matches</span>
+                            <i class="fa-solid fa-chevron-down transition-transform" id="chevron-${group.id}"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="matches-${group.id}" class="hidden px-6 pb-6 pt-2">
+                        <div class="space-y-2">
+                `;
+                
+                groupMatches.forEach(match => {
+                    const pred = userPreds[match.id] || null;
+                    const result = results[match.id] || null;
+                    
+                    html += `
+                        <div class="match-card bg-slate-950 border border-slate-800 rounded-2xl p-4">
+                            <div class="flex items-center justify-between gap-x-4">
+                                <!-- Match -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-x-3 text-sm">
+                                        <div class="flex items-center gap-x-2 flex-1 min-w-0">
+                                            <span class="font-medium truncate">${match.home}</span>
+                                            <span class="text-xs text-slate-500">vs</span>
+                                            <span class="font-medium truncate">${match.away}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Prediction Buttons -->
+                                <div class="flex items-center gap-x-1.5">
+                                    ${lockedUsers[currentUserId] ? `
+                                        <div class="px-4 py-1.5 text-xs font-semibold bg-emerald-900/30 text-emerald-400 rounded-2xl flex items-center gap-x-1">
+                                            <i class="fa-solid fa-lock"></i>
+                                            <span>Locked</span>
+                                        </div>
+                                    ` : `
+                                        <button onclick="setPrediction('${match.id}', 'home', this)"
+                                                class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'home' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
+                                            ${getFlagEmoji(match.home)} ${match.home.split(' ').pop()}
+                                        </button>
+                                        
+                                        <button onclick="setPrediction('${match.id}', 'draw', this)"
+                                                class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'draw' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
+                                            Draw
+                                        </button>
+                                        
+                                        <button onclick="setPrediction('${match.id}', 'away', this)"
+                                                class="prediction-btn px-4 py-1.5 text-xs font-semibold border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all ${pred === 'away' ? 'active bg-[#0A66C2] border-[#0A66C2] text-white' : ''}">
+                                            ${getFlagEmoji(match.away)} ${match.away.split(' ').pop()}
+                                        </button>
+                                    `}
+                                </div>
+                                
+                                <!-- Result indicator -->
+                                ${result ? `
+                                    <div class="ml-3 text-xs px-3 py-1 bg-emerald-900/30 text-emerald-400 rounded-2xl flex items-center gap-x-1 whitespace-nowrap">
+                                        <i class="fa-solid fa-check"></i>
+                                        <span class="font-medium">${result === 'home' ? match.home.split(' ').pop() : result === 'away' ? match.away.split(' ').pop() : 'Draw'}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleGroup(groupId) {
+            const matchesDiv = document.getElementById(`matches-${groupId}`);
+            const chevron = document.getElementById(`chevron-${groupId}`);
+            
+            if (matchesDiv.classList.contains('hidden')) {
+                matchesDiv.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                matchesDiv.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function setPrediction(matchId, choice, buttonElement) {
+            if (!predictions[currentUserId]) {
+                predictions[currentUserId] = {};
+            }
+            
+            // Toggle off if clicking the same
+            if (predictions[currentUserId][matchId] === choice) {
+                delete predictions[currentUserId][matchId];
+            } else {
+                predictions[currentUserId][matchId] = choice;
+            }
+            
+            saveState();
+            
+            // Refresh only this match's buttons (better UX)
+            renderAllGroups(); // Simple refresh for now
+        }
+
+        function saveAllPredictions() {
+            saveState();
+            
+            const btns = event.currentTarget;
+            const originalText = event.target ? event.target.innerHTML : '';
+            
+            // Toast notification
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-x-3 z-50`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-check-circle"></i>
+                <span class="font-medium">Predictions saved for ${PLAYERS.find(p => p.id === currentUserId).name}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2200);
+        }
+
+        function clearMyPredictions() {
+            if (confirm(`Clear all predictions for ${PLAYERS.find(p => p.id === currentUserId).name}?`)) {
+                predictions[currentUserId] = {};
+                saveState();
+                renderAllGroups();
+            }
+        }
+
+        // ==================== LEADERBOARD ====================
+        function calculateScore(userId) {
+            if (!predictions[userId]) return { points: 0, correct: 0, total: 0 };
+            
+            let points = 0;
+            let correct = 0;
+            let totalPredicted = 0;
+            
+            Object.keys(predictions[userId]).forEach(matchId => {
+                const pred = predictions[userId][matchId];
+                const actual = results[matchId];
+                
+                if (actual) {
+                    totalPredicted++;
+                    if (pred === actual) {
+                        correct++;
+                        points += 3;
+                    }
+                }
+            });
+            
+            return { points, correct, total: totalPredicted };
+        }
+
+        function calculateAndShowLeaderboard() {
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+            
+            const scores = PLAYERS.map(player => {
+                const score = calculateScore(player.id);
+                return {
+                    ...player,
+                    ...score,
+                    accuracy: score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0
+                };
+            });
+            
+            // Sort by points desc, then accuracy
+            scores.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.accuracy - a.accuracy;
+            });
+            
+            scores.forEach((player, index) => {
+                const row = document.createElement('tr');
+                row.className = `leaderboard-row ${player.id === currentUserId ? 'bg-slate-800/50' : ''}`;
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-mono text-sm text-slate-500">${index + 1}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-x-3">
+                            <div class="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold flex items-center gap-x-2">
+                                    ${player.name}
+                                    ${lockedUsers[player.id] ? '<i class="fa-solid fa-lock text-emerald-400 text-xs" title="Predictions locked"></i>' : ''}
+                                </div>
+                                ${player.id === currentUserId ? '<span class="text-[10px] px-1.5 py-px bg-[#0A66C2]/20 text-[#0A66C2] rounded">YOU</span>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="font-mono text-2xl font-semibold tabular-nums">${player.points}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="font-medium">${player.correct} / ${player.total}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="inline-flex items-center justify-center w-12 h-7 bg-slate-800 rounded-2xl text-xs font-mono">
+                            ${player.accuracy}%
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ==================== ADMIN ====================
+        function renderAdminMatches() {
+            const container = document.getElementById('admin-matches-container');
+            container.innerHTML = '';
+            
+            GROUPS.forEach(group => {
+                const groupMatches = ALL_MATCHES.filter(m => m.groupId === group.id);
+                
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'mb-6';
+                
+                let html = `<div class="font-semibold text-sm mb-3 px-1 flex items-center gap-x-2 text-amber-400">
+                    <span>${group.name}</span>
+                    <span class="text-xs text-slate-500">(${groupMatches.length} matches)</span>
+                </div>`;
+                
+                groupMatches.forEach(match => {
+                    const currentResult = results[match.id] || '';
+                    
+                    html += `
+                        <div class="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-2">
+                            <div class="flex-1 text-sm">
+                                <span class="font-medium">${match.home}</span> 
+                                <span class="text-slate-500 mx-1">vs</span> 
+                                <span class="font-medium">${match.away}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-x-2">
+                                <select onchange="updateResult('${match.id}', this.value)" 
+                                        class="bg-slate-900 border border-slate-700 text-sm rounded-2xl px-3 py-2 focus:outline-none focus:border-amber-500">
+                                    <option value="">Not played</option>
+                                    <option value="home" ${currentResult === 'home' ? 'selected' : ''}>${match.home} wins</option>
+                                    <option value="draw" ${currentResult === 'draw' ? 'selected' : ''}>Draw</option>
+                                    <option value="away" ${currentResult === 'away' ? 'selected' : ''}>${match.away} wins</option>
+                                </select>
+                                
+                                ${currentResult ? `
+                                    <button onclick="clearResult('${match.id}')" 
+                                            class="text-red-400 hover:text-red-500 p-2">
+                                        <i class="fa-solid fa-times text-sm"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                groupDiv.innerHTML = html;
+                container.appendChild(groupDiv);
+            });
+        }
+
+        function updateResult(matchId, value) {
+            if (value === '') {
+                delete results[matchId];
+            } else {
+                results[matchId] = value;
+            }
+            saveState();
+            // Refresh predictions view and leaderboard if open
+            renderAllGroups();
+            if (document.getElementById('section-leaderboard').classList.contains('active')) {
+                calculateAndShowLeaderboard();
+            }
+        }
+
+        function clearResult(matchId) {
+            delete results[matchId];
+            saveState();
+            renderAdminMatches();
+            renderAllGroups();
+        }
+
+        function markAllMatchesAsPlayed() {
+            if (!confirm("This will randomly set results for ALL matches (for demo/testing). Continue?")) return;
+            
+            ALL_MATCHES.forEach(match => {
+                const rand = Math.random();
+                if (rand < 0.45) results[match.id] = 'home';
+                else if (rand < 0.75) results[match.id] = 'away';
+                else results[match.id] = 'draw';
+            });
+            
+            saveState();
+            renderAdminMatches();
+            renderAllGroups();
+            calculateAndShowLeaderboard();
+            
+            alert("Demo results set! You can now view the leaderboard.");
+        }
+
+        function resetAllData() {
+            if (!confirm("This will delete ALL predictions and results. Are you sure?")) return;
+            
+            safeStorage.removeItem('wc2026_predictions');
+            safeStorage.removeItem('wc2026_results');
+            safeStorage.removeItem('wc2026_current_user');
+            
+            predictions = {};
+            results = {};
+            
+            // Re-render everything
+            renderAllGroups();
+            if (document.getElementById('section-leaderboard').classList.contains('active')) {
+                calculateAndShowLeaderboard();
+            }
+            renderAdminMatches();
+            
+            alert("All data has been reset.");
+        }
+
+        function hideBuyinModal() {
+            const modal = document.getElementById('buyin-modal');
+            if (modal) {
+                modal.style.transition = 'opacity 0.25s ease';
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 250);
+            }
+        }
+
+        function lockMyPredictions() {
+            if (confirm("Are you sure you want to LOCK your predictions? You won't be able to change them after this.")) {
+                lockedUsers[currentUserId] = true;
+                saveState();
+                updateLockUI();
+                renderAllGroups(); // Refresh to disable prediction buttons
+                alert("Your predictions are now locked. Good luck!");
+            }
+        }
+
+        function updateLockUI() {
+            const lockBtn = document.getElementById('lock-button');
+            const lockText = document.getElementById('lock-button-text');
+            
+            if (!lockBtn || !lockText) return;
+
+            if (lockedUsers[currentUserId]) {
+                lockBtn.disabled = true;
+                lockBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                lockBtn.classList.add('bg-emerald-600', 'cursor-not-allowed');
+                lockText.innerHTML = `<i class="fa-solid fa-lock mr-1"></i> Locked`;
+            } else {
+                lockBtn.disabled = false;
+                lockBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                lockBtn.classList.remove('bg-emerald-600', 'cursor-not-allowed');
+                lockText.innerHTML = `Lock Predictions`;
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        function renderPlayerPills() {
+            const container = document.getElementById('player-pills');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            PLAYERS.forEach(player => {
+                const isActive = player.id === currentUserId;
+                
+                const pill = document.createElement('button');
+                pill.className = `px-4 py-1.5 text-sm font-semibold rounded-2xl whitespace-nowrap transition-all flex items-center gap-x-2 ${
+                    isActive 
+                        ? 'bg-[#0A66C2] text-white shadow' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                }`;
+                
+                pill.innerHTML = `
+                    <span>${player.name}</span>
+                    ${isActive ? '<i class="fa-solid fa-check text-xs ml-0.5"></i>' : ''}
+                `;
+                
+                pill.onclick = () => switchUser(player.id);
+                
+                container.appendChild(pill);
+            });
+            
+            updateLockUI();
+        }
+
+        function initializeApp() {
+            generateMatches();
+            loadState();
+            renderPlayerPills();
+            renderAllGroups();
+            
+            // Show predictions by default
+            document.getElementById('section-predictions').classList.add('active');
+            
+            // Keyboard shortcut hint
+            console.log('%c[WC2026] App initialized. Use Admin tab to enter results.', 'color:#64748b');
+            
+            // Optional: Auto-open first group
+            setTimeout(() => {
+                const firstChevron = document.getElementById('chevron-A');
+                if (firstChevron) {
+                    // Uncomment if you want first group open by default
+                    // toggleGroup('A');
+                }
+            }, 800);
+
+            // Show warning if localStorage is blocked (sandboxed iframe, etc.)
+            showStorageWarning();
+        }
+
+        function showShareModal() {
+            document.getElementById('share-modal').classList.remove('hidden');
+            document.getElementById('share-modal').classList.add('flex');
+        }
+        
+        function hideShareModal() {
+            const modal = document.getElementById('share-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        // Boot the app
+        window.onload = initializeApp;
+        
+        // Expose some functions for debugging if needed
+        window.WC_DEBUG = { resetAllData, markAllMatchesAsPlayed };
+    </script>
+</body>
+</html>
