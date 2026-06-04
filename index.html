@@ -1390,56 +1390,20 @@
                 }, 180);
             }
 
-            // Audio analyser — conservative: min 3s before even checking, high threshold
+            // Drop is at exactly 17.4s — hardcoded from waveform analysis
             try {
-                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 var mlgAudio = new Audio(_DUNKY_MP3);
                 mlgAudio.volume = 1.0;
-                var src = audioCtx.createMediaElementSource(mlgAudio);
-                var analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 512;
-                src.connect(analyser); analyser.connect(audioCtx.destination);
                 mlgAudio.play().catch(function(){});
-
-                var bufLen = analyser.frequencyBinCount;
-                var freqData = new Uint8Array(bufLen);
-                var baseline = 0, bSamples = 0, frameNum = 0;
-                var MIN_FRAMES_BEFORE_DROP = 180; // ~3s at 60fps — don't fire in first 3 seconds
-                var BASELINE_SAMPLES = 80;        // collect ~1.3s of baseline
-                var DROP_MULTIPLIER = 3.8;        // needs to be 3.8x the baseline to count
-
-                function checkDrop() {
-                    if (dropFired || !overlay.parentNode) return;
-                    analyser.getByteFrequencyData(freqData);
-                    // Focus on mid-bass range (where the big hits live)
-                    var lo = Math.floor(bufLen * 0.05);
-                    var hi = Math.floor(bufLen * 0.35);
-                    var energy = 0;
-                    for (var i = lo; i < hi; i++) energy += freqData[i];
-                    energy /= (hi - lo);
-                    frameNum++;
-
-                    // Skip first 3 seconds entirely
-                    if (frameNum < MIN_FRAMES_BEFORE_DROP) {
-                        requestAnimationFrame(checkDrop);
-                        return;
+                mlgAudio.ontimeupdate = function() {
+                    if (mlgAudio.currentTime >= 17.3) {
+                        mlgAudio.ontimeupdate = null;
+                        fireTheDrop();
                     }
-
-                    // Collect baseline after the skip window
-                    if (bSamples < BASELINE_SAMPLES) {
-                        baseline = (baseline * bSamples + energy) / (bSamples + 1);
-                        bSamples++;
-                    } else {
-                        var threshold = Math.max(baseline * DROP_MULTIPLIER, 40);
-                        if (energy > threshold) { fireTheDrop(); return; }
-                    }
-                    requestAnimationFrame(checkDrop);
-                }
-                checkDrop();
-                setTimeout(function() { fireTheDrop(); }, 20000); // 20s hard cap
+                };
+                setTimeout(function() { fireTheDrop(); }, 20000); // fallback
             } catch(e) {
-                try { new Audio(_DUNKY_MP3).play().catch(function(){}); } catch(e2){}
-                setTimeout(function() { fireTheDrop(); }, 6000);
+                setTimeout(function() { fireTheDrop(); }, 17300);
             }
         }
 
