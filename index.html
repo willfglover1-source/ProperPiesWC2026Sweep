@@ -706,6 +706,21 @@
         }
 
         function showSection(section) {
+            if (section === 'admin') {
+                const stored = safeStorage.getItem('wc2026_admin_password');
+                if (!stored) {
+                    const pw = prompt('Set an admin password:');
+                    if (!pw || !pw.trim()) return;
+                    safeStorage.setItem('wc2026_admin_password', pw.trim());
+                    alert('Admin password set. Remember it!');
+                } else {
+                    const attempt = prompt('Admin password:');
+                    if (!attempt || attempt.trim() !== stored) {
+                        alert('Incorrect password.');
+                        return;
+                    }
+                }
+            }
             // Hide all sections
             document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
             // Deactivate all tabs
@@ -728,10 +743,14 @@
         }
 
         function switchUser(newUserId) {
-            currentUserId = newUserId;
-            saveState();
-            renderPlayerPills();           // Refresh the pills + lock button
-            renderAllGroups();             // Refresh predictions view for the new user
+            if (newUserId === currentUserId) return;
+            // Always verify via password modal before switching
+            const modal = document.getElementById('player-modal');
+            document.getElementById('player-list-view').classList.add('hidden');
+            document.getElementById('password-view').classList.remove('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            selectPlayer(newUserId);
         }
 
         function filterGroups() {
@@ -1420,6 +1439,13 @@
                     if (mlgAudio.currentTime >= 17.3) {
                         mlgAudio.ontimeupdate = null;
                         fireTheDrop();
+                    }
+                };
+                mlgAudio.onended = function() {
+                    if (overlay.parentNode) {
+                        overlay.style.transition = 'opacity 0.8s ease';
+                        overlay.style.opacity = '0';
+                        setTimeout(function() { overlay.remove(); }, 800);
                     }
                 };
                 setTimeout(function() { fireTheDrop(); }, 20000); // fallback
