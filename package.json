@@ -3,10 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
+    "setup": "node scripts/init-env.mjs && npm install",
     "dev": "vite --host 127.0.0.1",
+    "check": "node --check src/main.js && npm run validate",
+    "validate": "node scripts/validate-project.mjs",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "sync:fixtures": "node scripts/sync-football-data.mjs",
+    "sync:odds": "node scripts/sync-odds.mjs",
+    "sync:data": "npm run sync:fixtures && npm run sync:odds"
   },
   "devDependencies": {
     "vite": "^7.0.0"

@@ -9,36 +9,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/src/styles.css">
 </head>
-<body class="bg-slate-950 text-slate-200">
+<body class="bg-slate-950 text-slate-200 overflow-x-hidden">
     <!-- OUTRAGEOUS BUY-IN POPUP -->
-    <div id="buyin-modal" onclick="if (event.target.id === 'buyin-modal') hideBuyinModal()" 
+    <div id="buyin-modal" onclick="if (event.target.id === 'buyin-modal') hideBuyinModal()"
          class="fixed inset-0 bg-black/95 flex items-center justify-center z-[999]">
-        <div class="max-w-3xl mx-4 text-center px-4">
+        <div class="max-w-3xl mx-4 text-center px-3 sm:px-4">
             <div class="mb-4">
                 <div class="inline-block px-6 py-1.5 bg-red-600 text-white text-xs font-black tracking-[3px] rounded-full">
                     BUY-IN REQUIRED • $20 TOTAL
                 </div>
             </div>
-            
+
             <div onclick="event.stopImmediatePropagation(); hideBuyinModal()" class="cursor-pointer">
-                <div class="text-[64px] md:text-[82px] leading-[0.9] font-black text-red-500 tracking-[-5px] flashing-text select-none">
+                <div class="buyin-headline text-[64px] md:text-[82px] leading-[0.9] font-black text-red-500 tracking-[-5px] flashing-text select-none">
                     TRANSFER PLOV<br>
                     $20 BUY-IN<br>
                     FOR BOTH SWEEPS
                 </div>
             </div>
-            
+
             <div class="mt-6 text-red-400 text-2xl font-extrabold tracking-widest">
                 $10 GROUP STAGE + $10 ROUND OF 32
             </div>
-            
+
             <div class="mt-8">
-                <button onclick="hideBuyinModal()" 
-                        class="px-12 py-5 bg-white hover:bg-red-100 active:bg-red-200 text-black font-black text-2xl rounded-3xl transition-all shadow-2xl">
+                <button onclick="hideBuyinModal()"
+                        class="w-full sm:w-auto px-6 sm:px-12 py-4 sm:py-5 bg-white hover:bg-red-100 active:bg-red-200 text-black font-black text-lg sm:text-2xl rounded-3xl transition-all shadow-2xl">
                     I HAVE SENT $20 TO PLOV
                 </button>
             </div>
-            
+
             <div class="mt-5 text-red-400/60 text-sm font-medium tracking-wider">
                 TAP ANYWHERE TO CONTINUE TO THE SWEEPS
             </div>
@@ -46,12 +46,12 @@
     </div>
 
     <!-- PLAYER SELECTION + PASSWORD MODAL -->
-    <div id="player-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[200]">
-        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full mx-4 p-6">
+    <div id="player-modal" class="hidden fixed inset-0 bg-black/90 items-center justify-center z-[200] p-3">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-4 sm:p-6 max-h-[92vh] overflow-y-auto">
             <div id="player-list-view">
                 <h3 class="text-2xl font-bold mb-2 text-center">Select Your Name</h3>
                 <p class="text-slate-400 text-sm text-center mb-6">Choose who you are to make predictions</p>
-                
+
                 <div id="player-name-list" class="grid grid-cols-1 gap-2">
                     <!-- Populated by JS -->
                 </div>
@@ -60,81 +60,104 @@
             <div id="password-view" class="hidden">
                 <h3 class="text-xl font-bold mb-1" id="password-title"></h3>
                 <p class="text-slate-400 text-sm mb-4" id="password-subtitle"></p>
-                
-                <input type="password" id="password-input" 
-                       class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white mb-4 focus:outline-none focus:border-[#0A66C2]"
-                       placeholder="Enter password">
-                
-                <div class="flex gap-3">
-                    <button onclick="goBackToPlayerList()" 
-                            class="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium">
-                        Back to list
-                    </button>
-                    <button onclick="submitPassword()" 
-                            class="flex-1 px-4 py-3 bg-[#0A66C2] hover:bg-blue-700 rounded-2xl text-sm font-semibold">
-                        Continue
-                    </button>
-                </div>
+
+                <form onsubmit="event.preventDefault(); submitPassword()">
+                    <input type="password" id="password-input"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 text-white mb-4 focus:outline-none focus:border-[#0A66C2]"
+                           placeholder="Enter password"
+                           autocomplete="current-password">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" onclick="goBackToPlayerList()"
+                                class="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium">
+                            Back to list
+                        </button>
+                        <button type="submit"
+                                class="flex-1 px-4 py-3 bg-[#0A66C2] hover:bg-blue-700 rounded-2xl text-sm font-semibold">
+                            Continue
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <div class="sweep-container px-4 py-6">
+    <div class="sweep-container px-3 sm:px-4 py-4 sm:py-6">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-x-4">
-                <div class="w-12 h-12 bg-[#0A66C2] rounded-2xl flex items-center justify-center">
-                    <i class="fa-solid fa-trophy text-white text-3xl"></i>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex items-center gap-x-3 sm:gap-x-4 min-w-0">
+                <div class="w-11 h-11 sm:w-12 sm:h-12 bg-[#0A66C2] rounded-2xl flex shrink-0 items-center justify-center">
+                    <i class="fa-solid fa-trophy text-white text-2xl sm:text-3xl"></i>
                 </div>
-                <div>
-                    <h1 class="font-display text-4xl font-semibold tracking-tighter">WC 2026</h1>
+                <div class="min-w-0">
+                    <h1 class="font-display text-3xl sm:text-4xl font-semibold tracking-tighter">WC 2026</h1>
                     <p class="text-slate-400 text-sm -mt-1">Group Stage Sweep • 9 Players</p>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-x-3">
+
+            <div class="flex flex-col sm:flex-row lg:items-center gap-2 sm:gap-3 w-full lg:w-auto">
                 <!-- Player Selector -->
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-1.5 flex items-center gap-x-1 overflow-x-auto max-w-[420px]">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-1.5 flex items-center gap-x-1 overflow-x-auto w-full lg:max-w-[420px]">
                     <div id="player-pills" class="flex items-center gap-x-1">
                         <!-- Populated dynamically by JS with clickable pills -->
                     </div>
                 </div>
-                
-                <button onclick="showShareModal()" 
-                        class="flex items-center gap-x-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium transition-colors whitespace-nowrap">
+
+                <button onclick="showShareModal()"
+                        class="flex items-center justify-center gap-x-2 px-4 sm:px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium transition-colors whitespace-nowrap">
                     <i class="fa-solid fa-share-alt mr-2"></i>
                     <span>Share</span>
                 </button>
 
                 <!-- Dunky Time Button (subtle but readable) -->
                 <button onclick="triggerDunkyTime()" id="dunky-button"
-                        class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 transition-colors">
+                        class="px-3 py-2 sm:py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 transition-colors">
                     Dunky Time
                 </button>
 
                 <!-- Lock Predictions Button -->
                 <button onclick="lockMyPredictions()" id="lock-button"
-                        class="flex items-center gap-x-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-2xl text-sm transition-colors whitespace-nowrap">
+                        class="flex items-center justify-center gap-x-2 px-4 sm:px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-2xl text-sm transition-colors whitespace-nowrap">
                     <i class="fa-solid fa-lock"></i>
                     <span id="lock-button-text">Lock Predictions</span>
                 </button>
             </div>
         </div>
 
+        <!-- Tournament Snapshot -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4">
+                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Player</div>
+                <div id="snapshot-player" class="mt-1 text-lg sm:text-xl font-semibold truncate">Mik</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4">
+                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Predictions</div>
+                <div id="snapshot-predictions" class="mt-1 text-lg sm:text-xl font-semibold">0 / 72</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4">
+                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Results</div>
+                <div id="snapshot-results" class="mt-1 text-lg sm:text-xl font-semibold">0 live</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4">
+                <div class="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Odds</div>
+                <div id="snapshot-odds" class="mt-1 text-lg sm:text-xl font-semibold">Manual</div>
+            </div>
+        </div>
+
         <!-- Tabs -->
-        <div class="flex border-b border-slate-800 mb-6">
+        <div class="flex overflow-x-auto border-b border-slate-800 mb-5 sm:mb-6 -mx-3 px-3 sm:mx-0 sm:px-0">
             <button onclick="showSection('group-stage')" id="tab-group-stage"
-                    class="nav-tab active px-6 py-3 font-medium flex items-center gap-x-2 text-base border-b-2 border-[#0A66C2]">
+                    class="nav-tab active px-4 sm:px-6 py-3 font-medium flex items-center gap-x-2 text-sm sm:text-base border-b-2 border-[#0A66C2] whitespace-nowrap">
                 <i class="fa-solid fa-users"></i>
                 <span>Group Stage</span>
             </button>
             <button onclick="showSection('leaderboard')" id="tab-leaderboard"
-                    class="nav-tab px-6 py-3 font-medium flex items-center gap-x-2 text-base text-slate-400 hover:text-slate-200">
+                    class="nav-tab px-4 sm:px-6 py-3 font-medium flex items-center gap-x-2 text-sm sm:text-base text-slate-400 hover:text-slate-200 whitespace-nowrap">
                 <i class="fa-solid fa-chart-line"></i>
                 <span>Leaderboard</span>
             </button>
             <button onclick="showSection('admin')" id="tab-admin"
-                    class="nav-tab px-6 py-3 font-medium flex items-center gap-x-2 text-base text-slate-400 hover:text-slate-200">
+                    class="nav-tab px-4 sm:px-6 py-3 font-medium flex items-center gap-x-2 text-sm sm:text-base text-slate-400 hover:text-slate-200 whitespace-nowrap">
                 <i class="fa-solid fa-cog"></i>
                 <span>Admin</span>
             </button>
@@ -142,33 +165,65 @@
 
         <!-- GROUP STAGE SECTION -->
         <div id="section-group-stage" class="section active">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
                 <div>
-                    <h2 class="text-2xl font-semibold">Group Stage Predictions</h2>
+                    <h2 class="text-xl sm:text-2xl font-semibold">Group Stage Predictions</h2>
                     <p class="text-slate-400 text-sm">Predict the winner or draw for every group stage match.</p>
-                    <p class="text-slate-400 text-sm">Predict the winner or draw for every group stage match. Points: 3 for correct result.</p>
+                    <p class="text-slate-400 text-sm">Points: 3 for each correct result.</p>
                 </div>
-                <div class="flex items-center gap-x-2">
-                    <button onclick="saveAllPredictions()" 
-                            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2 transition-colors">
+                <div class="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-x-2">
+                    <button onclick="saveAllPredictions()"
+                            class="justify-center px-4 sm:px-5 py-2.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2 transition-colors">
                         <i class="fa-solid fa-save"></i>
                         <span>Save All Predictions</span>
                     </button>
-                    <button onclick="clearMyPredictions()" 
-                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-2xl flex items-center gap-x-2 transition-colors">
+                    <button onclick="clearMyPredictions()"
+                            class="justify-center px-4 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-2xl flex items-center gap-x-2 transition-colors">
                         <i class="fa-solid fa-undo"></i>
                         <span>Clear Mine</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Search -->
-            <div class="mb-6">
-                <div class="relative max-w-md">
+            <!-- Search + pick tools -->
+            <div class="mb-6 space-y-3">
+                <div class="relative max-w-md sm:max-w-lg">
                     <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500"></i>
-                    <input type="text" id="search-input" placeholder="Search teams or groups..." 
+                    <input type="text" id="search-input" placeholder="Search teams or groups..."
                            onkeyup="filterGroups()"
                            class="w-full bg-slate-900 border border-slate-700 focus:border-[#0A66C2] rounded-2xl pl-11 py-3 text-sm placeholder:text-slate-500">
+                </div>
+                <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-1 flex overflow-x-auto w-full xl:w-auto">
+                        <button onclick="setMatchFilter('all')" id="filter-all"
+                                class="match-filter-btn active px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap">
+                            All matches
+                        </button>
+                        <button onclick="setMatchFilter('todo')" id="filter-todo"
+                                class="match-filter-btn px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-400">
+                            Need picks
+                        </button>
+                        <button onclick="setMatchFilter('picked')" id="filter-picked"
+                                class="match-filter-btn px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-400">
+                            Picked
+                        </button>
+                        <button onclick="setMatchFilter('resulted')" id="filter-resulted"
+                                class="match-filter-btn px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-400">
+                            Results in
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2 xl:flex xl:items-center">
+                        <button onclick="pickRemainingFavorites()"
+                                class="justify-center px-4 py-2.5 bg-[#0A66C2] hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Pick favourites</span>
+                        </button>
+                        <button onclick="randomizeRemainingPredictions()"
+                                class="justify-center px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-semibold rounded-2xl flex items-center gap-x-2">
+                            <i class="fa-solid fa-dice"></i>
+                            <span>Random remaining</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -180,42 +235,42 @@
 
         <!-- LEADERBOARD SECTION -->
         <div id="section-leaderboard" class="section">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-2xl font-semibold">Live Leaderboard</h2>
-                    <p class="text-slate-400">Updated automatically when results are entered</p>
+                    <h2 class="text-xl sm:text-2xl font-semibold">Live Leaderboard</h2>
+                    <p class="text-slate-400 text-sm sm:text-base">Updated automatically when results are entered</p>
                 </div>
                 <button onclick="calculateAndShowLeaderboard()"
-                        class="px-5 py-2.5 bg-[#0A66C2] hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2">
+                        class="justify-center px-5 py-2.5 bg-[#0A66C2] hover:bg-blue-700 text-white text-sm font-semibold rounded-2xl flex items-center gap-x-2">
                     <i class="fa-solid fa-sync-alt"></i>
                     <span>Refresh Scores</span>
                 </button>
             </div>
 
             <!-- Prize pot banner -->
-            <div class="flex items-center gap-x-1 mb-5 p-4 bg-slate-900 border border-slate-800 rounded-2xl">
-                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 pr-4">
+            <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-x-1 mb-5 p-3 sm:p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 sm:border-r border-slate-700 sm:pr-4">
                     <span class="text-2xl">🥇</span>
                     <div>
                         <div class="text-yellow-400 font-bold text-lg leading-none">$60</div>
                         <div class="text-slate-500 text-xs">1st place</div>
                     </div>
                 </div>
-                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 px-4">
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 sm:border-r border-slate-700 sm:px-4">
                     <span class="text-2xl">🥈</span>
                     <div>
                         <div class="text-slate-300 font-bold text-lg leading-none">$20</div>
                         <div class="text-slate-500 text-xs">2nd place</div>
                     </div>
                 </div>
-                <div class="flex-1 flex items-center justify-center gap-x-1.5 border-r border-slate-700 px-4">
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 sm:border-r border-slate-700 sm:px-4">
                     <span class="text-2xl">🥉</span>
                     <div>
                         <div class="text-amber-500 font-bold text-lg leading-none">$10</div>
                         <div class="text-slate-500 text-xs">3rd place</div>
                     </div>
                 </div>
-                <div class="flex-1 flex items-center justify-center gap-x-1.5 pl-4">
+                <div class="flex-1 flex items-center justify-center gap-x-1.5 sm:pl-4">
                     <span class="text-2xl">💀</span>
                     <div>
                         <div class="text-red-500 font-bold text-sm leading-none forfeit-badge">FORFEIT</div>
@@ -224,7 +279,7 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
+            <div class="leaderboard-shell bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
                 <table class="w-full">
                     <thead>
                         <tr class="bg-slate-950 border-b border-slate-800">
@@ -251,34 +306,34 @@
         <!-- ADMIN SECTION -->
         <div id="section-admin" class="section">
             <div class="max-w-4xl">
-                <div class="flex items-center gap-x-3 mb-6">
-                    <div class="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center">
+                <div class="flex items-center gap-x-3 mb-5 sm:mb-6">
+                    <div class="w-10 h-10 bg-amber-500/10 text-amber-400 rounded-2xl flex shrink-0 items-center justify-center">
                         <i class="fa-solid fa-shield-halved text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-semibold">Admin Panel</h2>
+                        <h2 class="text-xl sm:text-2xl font-semibold">Admin Panel</h2>
                         <p class="text-slate-400 text-sm">Enter match results to update the leaderboard for everyone</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 mb-6">
-                    <div class="flex items-center justify-between mb-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div class="font-medium">Quick Actions</div>
-                        <button onclick="resetAllData()" 
+                        <button onclick="resetAllData()"
                                 class="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-xl flex items-center gap-x-1.5 text-xs font-medium">
                             <i class="fa-solid fa-trash"></i>
                             <span>Reset Everything (Danger)</span>
                         </button>
                     </div>
-                    
-                    <div class="flex flex-wrap gap-3">
-                        <button onclick="markAllMatchesAsPlayed()" 
-                                class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-2xl flex items-center gap-x-2">
+
+                    <div class="grid grid-cols-1 sm:flex sm:flex-wrap gap-3">
+                        <button onclick="markAllMatchesAsPlayed()"
+                                class="justify-center px-4 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-2xl flex items-center gap-x-2">
                             <i class="fa-solid fa-check-double"></i>
                             <span>Mark all matches played (demo)</span>
                         </button>
-                        <button onclick="calculateAndShowLeaderboard()" 
-                                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-2xl flex items-center gap-x-2">
+                        <button onclick="calculateAndShowLeaderboard()"
+                                class="justify-center px-4 py-2.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-2xl flex items-center gap-x-2">
                             <i class="fa-solid fa-calculator"></i>
                             <span>Recalculate all scores</span>
                         </button>
@@ -286,11 +341,11 @@
                 </div>
 
                 <!-- Results Entry -->
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6">
                     <h3 class="font-semibold mb-4 flex items-center gap-x-2">
                         <span>Enter / Update Match Results</span>
                     </h3>
-                    
+
                     <div id="admin-matches-container" class="space-y-3 max-h-[520px] overflow-auto pr-2">
                         <!-- Populated dynamically -->
                     </div>
@@ -300,29 +355,29 @@
     </div>
 
     <!-- Share Modal -->
-    <div id="share-modal" onclick="if (event.target.id === 'share-modal') hideShareModal()" 
-         class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full mx-4 p-6">
+    <div id="share-modal" onclick="if (event.target.id === 'share-modal') hideShareModal()"
+         class="hidden fixed inset-0 bg-black/70 items-center justify-center z-50 p-3">
+        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-4 sm:p-6 max-h-[92vh] overflow-y-auto">
             <h3 class="font-semibold text-xl mb-2">Share this pool with your 9 friends</h3>
-            <p class="text-slate-400 text-sm mb-4">This is a self-contained file. Best ways to share:</p>
-            
+            <p class="text-slate-400 text-sm mb-4">Best ways to share once it is hosted:</p>
+
             <div class="space-y-3">
                 <div class="flex items-start gap-x-3 p-3 bg-slate-950 rounded-2xl">
                     <i class="fa-solid fa-globe text-emerald-400 mt-1"></i>
                     <div class="text-sm">
                         <div class="font-medium">Host it for free (recommended)</div>
-                        <div class="text-slate-400">Upload this HTML file to <a href="https://app.netlify.com/drop" target="_blank" class="text-[#0A66C2]">Netlify Drop</a> or Vercel. Get a real link instantly.</div>
+                        <div class="text-slate-400">Deploy the Vite app to Vercel, Netlify, or Cloudflare Pages and send the live link.</div>
                     </div>
                 </div>
                 <div class="flex items-start gap-x-3 p-3 bg-slate-950 rounded-2xl">
                     <i class="fa-solid fa-users text-blue-400 mt-1"></i>
                     <div class="text-sm">
-                        <div class="font-medium">Share the file directly</div>
-                        <div class="text-slate-400">Send the .html file via WhatsApp, email, or Discord. Everyone opens it in their browser.</div>
+                        <div class="font-medium">Use Supabase for live sync</div>
+                        <div class="text-slate-400">Add the Supabase environment variables so everyone sees the same picks, locks, results, and odds.</div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-6 flex justify-end">
                 <button onclick="hideShareModal()" class="px-5 py-2 text-sm font-medium">Got it</button>
             </div>
